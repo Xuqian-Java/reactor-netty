@@ -184,6 +184,7 @@ public class ChannelOperations<INBOUND extends NettyInbound, OUTBOUND extends Ne
 	@Override
 	public void dispose() {
 		inbound.cancel();
+		//TODO shouldn't super.dispose be called there / channel closed?
 	}
 
 	@Override
