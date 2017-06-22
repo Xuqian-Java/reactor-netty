@@ -19,6 +19,7 @@ package reactor.ipc.netty;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -29,15 +30,18 @@ import java.util.function.Function;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufHolder;
+import io.netty.buffer.DuplicatedByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.CharsetUtil;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSource;
 import reactor.core.publisher.Mono;
+import sun.util.logging.resources.logging;
 
 /**
  * A decorating {@link Flux} {@link NettyInbound} with various {@link ByteBuf} related
@@ -46,6 +50,8 @@ import reactor.core.publisher.Mono;
  * @author Stephane Maldini
  */
 public final class ByteBufFlux extends FluxSource<ByteBuf, ByteBuf> {
+
+
 
 	/**
 	 * Decorate as {@link ByteBufFlux}
@@ -232,6 +238,10 @@ public final class ByteBufFlux extends FluxSource<ByteBuf, ByteBuf> {
 	 */
 	public ByteBufFlux retain() {
 		return new ByteBufFlux(doOnNext(ByteBuf::retain), alloc);
+	}
+
+	public ByteBufFlux logByteBuf() {
+		return new ByteBufFlux(super.log(), this.alloc);
 	}
 
 	final ByteBufAllocator alloc;
