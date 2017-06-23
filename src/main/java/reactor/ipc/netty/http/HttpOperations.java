@@ -51,6 +51,8 @@ import reactor.ipc.netty.NettyPipeline;
 import reactor.ipc.netty.channel.AbortedException;
 import reactor.ipc.netty.channel.ChannelOperations;
 import reactor.ipc.netty.channel.ContextHandler;
+import reactor.ipc.netty.channel.data.AbstractFileChunkedStrategy;
+import reactor.ipc.netty.channel.data.FileChunkedStrategy;
 
 /**
  * An HTTP ready {@link ChannelOperations} with state management for status and headers

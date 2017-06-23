@@ -35,6 +35,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import org.junit.Test;
 import reactor.core.Exceptions;
+import reactor.ipc.netty.channel.data.FileChunkedStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -255,8 +256,8 @@ public class NettyOutboundTest {
 				.endsWith("End of File");
 	}
 
-	private static final NettyOutbound.FileChunkedStrategy FILE_CHUNKED_STRATEGY_1024_NOPIPELINE =
-			new NettyOutbound.AbstractFileChunkedStrategy<ByteBuf>() {
+	private static final FileChunkedStrategy FILE_CHUNKED_STRATEGY_1024_NOPIPELINE =
+			new FileChunkedStrategy<ByteBuf>() {
 				@Override
 				public ChunkedInput<ByteBuf> chunkFile(RandomAccessFile file) {
 					try {

@@ -31,18 +31,17 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.DefaultFileRegion;
-import io.netty.handler.codec.http.HttpChunkedInput;
-import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedInput;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.ipc.connector.Outbound;
+import reactor.ipc.netty.channel.data.AbstractFileChunkedStrategy;
+import reactor.ipc.netty.channel.data.FileChunkedStrategy;
 
 /**
  * @author Stephane Maldini
@@ -162,44 +161,6 @@ public interface NettyOutbound extends Outbound<ByteBuf>, Publisher<Void> {
 		}
 	}
 
-	interface FileChunkedStrategy<T> {
-
-		void preparePipeline(NettyContext context);
-
-		ChunkedInput<T> chunkFile(RandomAccessFile file);
-
-		default void afterWrite(NettyContext context) { }
-
-		void cleanupPipeline(NettyContext context);
-	}
-
-	abstract class AbstractFileChunkedStrategy<T> implements FileChunkedStrategy<T> {
-
-		boolean addHandler;
-
-		@Override
-		public void preparePipeline(NettyContext context) {
-			this.addHandler = context.channel().pipeline().get(NettyPipeline.ChunkedWriter) == null;
-			if (addHandler) {
-				boolean hasReactiveBridge = context.channel().pipeline().get(NettyPipeline.ReactiveBridge) != null;
-
-				if (hasReactiveBridge) {
-					context.channel().pipeline().addBefore(NettyPipeline.ReactiveBridge, NettyPipeline.ChunkedWriter, new ChunkedWriteHandler());
-				}
-				else {
-					context.channel().pipeline().addLast(NettyPipeline.ChunkedWriter, new ChunkedWriteHandler());
-				}
-			}
-		}
-
-		@Override
-		public void cleanupPipeline(NettyContext context) {
-			if (addHandler) {
-				context.channel().pipeline().remove(NettyPipeline.ChunkedWriter);
-			}
-		}
-	}
-
 	FileChunkedStrategy<ByteBuf> FILE_CHUNKED_STRATEGY_BUFFER = new AbstractFileChunkedStrategy<ByteBuf>() {
 
 		@Override
@@ -268,8 +229,7 @@ public interface NettyOutbound extends Outbound<ByteBuf>, Publisher<Void> {
 				fc -> {
 						try {
 							ChunkedInput<?> message = strategy.chunkFile(fc);
-							return FutureMono.from(context().channel().writeAndFlush(message))
-									.doOnSuccess(s -> strategy.afterWrite(context()));
+							return FutureMono.from(context().channel().writeAndFlush(message));
 						}
 						catch (Exception e) {
 							return Mono.error(e);
