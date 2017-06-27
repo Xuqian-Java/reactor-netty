@@ -28,6 +28,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.channel.socket.DatagramChannel;
+import reactor.core.publisher.Mono;
 import reactor.ipc.netty.resources.LoopResources;
 import reactor.ipc.netty.resources.PoolResources;
 
@@ -83,6 +84,14 @@ public class TcpResources implements PoolResources, LoopResources {
 		}
 	}
 
+	public static Mono<Void> shutdownAndListen() {
+		TcpResources resources = tcpResources.getAndSet(null);
+		if (resources != null) {
+			return resources._disposeAndListen();
+		}
+		return Mono.empty();
+	}
+
 	final PoolResources defaultPools;
 	final LoopResources defaultLoops;
 
@@ -96,6 +105,11 @@ public class TcpResources implements PoolResources, LoopResources {
 		//noop on global by default
 	}
 
+	@Override
+	public Mono<Void> disposeAndListen() {
+		return Mono.empty(); //noop on global by default
+	}
+
 	/**
 	 * Dispose underlying resources
 	 */
@@ -103,6 +117,17 @@ public class TcpResources implements PoolResources, LoopResources {
 	protected void _dispose(){
 		defaultPools.dispose();
 		defaultLoops.dispose();
+	}
+
+	/**
+	 * Dispose underlying resources in a listenable fashion.
+	 * @return the Mono that represents the end of disposal
+	 */
+	protected Mono<Void> _disposeAndListen() {
+		return Mono.when(
+				defaultLoops.disposeAndListen(),
+				defaultPools.disposeAndListen())
+		           .then();
 	}
 
 	@Override
