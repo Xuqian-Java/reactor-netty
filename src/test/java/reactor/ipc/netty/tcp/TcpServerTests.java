@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -363,6 +364,23 @@ public class TcpServerTests {
 		Assertions.assertThat(server.options())
 		          .isNotSameAs(server.options)
 		          .isNotSameAs(server.options());
+	}
+
+	@Test(timeout = 20000)
+	public void startAndAwait() throws InterruptedException {
+		AtomicReference<BlockingNettyContext> bnc = new AtomicReference<>();
+
+		Thread t = new Thread(() -> TcpServer.create()
+		                                     .startAndAwait((in, out) -> out.sendString(Mono.just("foo")),
+				bnc::set));
+		t.start();
+
+		Thread.sleep(5000);
+		bnc.get().stop();
+
+		t.join();
+
+		System.out.println("done");
 	}
 
 	public static class Pojo {
